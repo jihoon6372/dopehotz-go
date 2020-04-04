@@ -9,7 +9,7 @@ import (
 
 // Content 반환 (테스트용)
 type Content struct {
-	Message string
+	Message string `json:"message"`
 }
 
 // FindUser 사용자 정보 조회
@@ -17,6 +17,10 @@ func (h *Handler) FindUser(c echo.Context) error {
 	id := c.Param("id")
 	user := &serializer.User{}
 	h.DB.Model(&user).Where("id = ?", id).Scan(&user)
+	if user.ID == 0 {
+		return echo.ErrNotFound
+	}
+
 	h.DB.Model(&user.Profile).Where("user_id = ?", id).Scan(&user.Profile)
-	return c.JSON(http.StatusOK, user)
+	return c.JSON(http.StatusOK, &user)
 }
