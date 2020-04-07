@@ -42,5 +42,5 @@ func main() {
 	r.PATCH("/:id", h.UpdatePlaylist)
 	e.GET("/playlist/:id", h.FindPlaylist)
 
-	e.Logger.Fatal(e.Start(":8080"))
+	e.Logger.Fatal(e.Start(":1323"))
 }

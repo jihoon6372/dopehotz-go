@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/dgrijalva/jwt-go"
+	"github.com/labstack/echo/middleware"
 )
 
 // JwtCustomClaims are custom claims extending default ones.
@@ -26,4 +27,14 @@ type Config struct {
 	Config struct {
 		SecretKey string `yaml:"secretkey"`
 	} `yaml:"config"`
+}
+
+// GetJWTConfig ...
+func GetJWTConfig(secretKey []byte) middleware.JWTConfig {
+	DefaultJWTConfig := middleware.JWTConfig{
+		SigningKey: secretKey,
+		AuthScheme: "JWT",
+	}
+
+	return DefaultJWTConfig
 }
