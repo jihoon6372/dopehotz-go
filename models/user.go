@@ -1,18 +1,19 @@
 package models
 
-// AuthUser Model
-type AuthUser struct {
-	ID          int    `json:"id"`
-	FirstName   string `json:"first_name"`
-	LastName    string `json:"last_name"`
-	Email       string `json:"email"`
-	IsStaff     bool   `json:"is_staff"`
-	IsActive    bool   `json:"is_active"`
-	IsSuperuser bool   `json:"is_superuser"`
+// User Model
+type User struct {
+	ID          int     `json:"id"`
+	FirstName   string  `json:"first_name"`
+	LastName    string  `json:"last_name"`
+	Email       string  `json:"email"`
+	IsStaff     bool    `json:"is_staff"`
+	IsActive    bool    `json:"is_active"`
+	IsSuperuser bool    `json:"is_superuser"`
+	Profile     Profile `json:"profile"`
 }
 
 // TableName 유저 테이블명 반환
-func (AuthUser) TableName() string {
+func (User) TableName() string {
 	return "auth_user"
 }
 

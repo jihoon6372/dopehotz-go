@@ -9,4 +9,5 @@ type Playlist struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 	UserID       int       `json:"user_id"`
 	PlaylistName string    `json:"playlist_name"`
+	TrackList    []uint8   `json:"track_list"`
 }

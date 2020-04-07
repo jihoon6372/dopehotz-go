@@ -25,13 +25,22 @@ func main() {
 		panic(err)
 	}
 
+	// db.AutoMigrate(&models.Playlist{})
+
 	e := echo.New()
-	// jwtConfig := getJWTConfig([]byte(cfg.Config.SecretKey))
+	jwtConfig := config.GetJWTConfig([]byte(cfg.Config.SecretKey))
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
 	h := &handler.Handler{DB: db}
 	e.GET("/users/:id", h.FindUser)
+
+	// 플레이리스트 인증
+	r := e.Group("/playlist")
+	r.Use(middleware.JWTWithConfig(jwtConfig))
+	r.POST("", h.CreatePlaylist)
+	r.PATCH("/:id", h.UpdatePlaylist)
+	e.GET("/playlist/:id", h.FindPlaylist)
 
 	e.Logger.Fatal(e.Start(":8080"))
 }

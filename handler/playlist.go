@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jihoon6372/dopehotz-go/models"
@@ -20,7 +21,8 @@ func (h *Handler) FindPlaylist(c echo.Context) error {
 		user_id,
 		created_at,
 		updated_at,
-		array_to_string(track_list, ',') as track_list
+		array_to_string(track_list, ',') as track_list_string,
+		track_list
 	from
 		playlists
 	where
@@ -28,7 +30,7 @@ func (h *Handler) FindPlaylist(c echo.Context) error {
 
 	type oriPlaylist struct {
 		models.Playlist
-		TrackList string `json:"track_list"`
+		TrackListString string `json:"track_list_string"`
 	}
 	originPlaylist := &oriPlaylist{}
 	playlist := &serializer.Playlist{}
@@ -38,11 +40,17 @@ func (h *Handler) FindPlaylist(c echo.Context) error {
 
 	// 트랙리스트 조회
 	var trackList []string
-	trackList = strings.Split(originPlaylist.TrackList, ",")
-	h.DB.Where("track_id IN (?)", trackList).Order("array_position(array[" + originPlaylist.TrackList + "], track_id)").Find(&playlist.TrackList)
+	trackList = strings.Split(originPlaylist.TrackListString, ",")
+	h.DB.Where("track_id IN (?)", trackList).Order("array_position(array[" + originPlaylist.TrackListString + "], track_id)").Find(&playlist.TrackList)
 
 	for i := range playlist.TrackList {
-		h.DB.Model(playlist.TrackList[i]).Related(&playlist.TrackList[i].Genre).Related(&playlist.TrackList[i].API).Related(&playlist.TrackList[i].User)
+		profile := &models.Profile{}
+		track := &playlist.TrackList[i]
+		h.DB.Model(playlist.TrackList[i]).Related(&track.Genre).Related(&track.API).Related(&track.User)
+		h.DB.Where("user_id = ?", playlist.TrackList[i].UserID).Find(&profile)
+		t := track.CreatedAt.In(time.FixedZone("KST", 9*60*60))
+		track.CreatedAt = t
+		playlist.TrackList[i].User.Profile = *profile
 	}
 
 	return c.JSON(http.StatusOK, &playlist)
@@ -57,7 +65,49 @@ func (h *Handler) CreatePlaylist(c echo.Context) error {
 	playlist := &models.Playlist{}
 	playlist.UserID = int(claims["user_id"].(float64))
 	playlist.PlaylistName = playlistName
-	// h.DB.Create(&playlist)
+
+	// 생성
+	h.DB.Create(&playlist)
 
 	return c.JSON(http.StatusCreated, &playlist)
+}
+
+// UpdatePlaylist 플레이리스트 수정
+func (h *Handler) UpdatePlaylist(c echo.Context) error {
+	playlistID := c.Param("id")
+	user := c.Get("user").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+
+	playlist := &models.Playlist{}
+	h.DB.Where("id = ?", playlistID).Find(&playlist)
+
+	// 권한 체크
+	if playlist.UserID != int(claims["user_id"].(float64)) {
+		return echo.ErrForbidden
+	}
+
+	// 입력받은 파라미터
+	inpTrackList := c.FormValue("track_list")
+	inpPlaylistName := c.FormValue("playlist_name")
+
+	// 플레이리스트 이름
+	var playlistName string
+	if inpPlaylistName == "" {
+		playlistName = playlist.PlaylistName
+	} else {
+		playlistName = inpPlaylistName
+	}
+
+	// 플레이리스트 소속 트랙 리스트
+	var updateTrackList string
+	if inpTrackList == "" {
+		updateTrackList = string(playlist.TrackList)
+	} else {
+		updateTrackList = "{" + inpTrackList + "}"
+	}
+
+	// 업데이트
+	h.DB.Model(&playlist).Updates(map[string]interface{}{"track_list": updateTrackList, "playlist_name": playlistName})
+
+	return c.JSON(http.StatusOK, playlist)
 }

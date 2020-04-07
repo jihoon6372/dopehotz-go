@@ -21,3 +21,16 @@ func ReadConfig(cfg *config.Config) {
 		panic(err)
 	}
 }
+
+// UniqueInt 배열 중복값 제거
+func UniqueInt(intSlice []int) []int {
+	keys := make(map[int]bool)
+	list := []int{}
+	for _, entry := range intSlice {
+		if _, value := keys[entry]; !value {
+			keys[entry] = true
+			list = append(list, entry)
+		}
+	}
+	return list
+}

@@ -6,6 +6,6 @@ import (
 
 // User 사용자 시리얼라이저
 type User struct {
-	models.AuthUser
+	models.User
 	Profile models.Profile `json:"profile"`
 }
