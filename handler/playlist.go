@@ -61,13 +61,12 @@ func (h *Handler) CreatePlaylist(c echo.Context) error {
 	user := c.Get("user").(*jwt.Token)
 	claims := user.Claims.(jwt.MapClaims)
 	playlistName := c.FormValue("playlist_name")
-
 	playlist := &models.Playlist{}
-	playlist.UserID = int(claims["user_id"].(float64))
-	playlist.PlaylistName = playlistName
 
 	// 생성
-	h.DB.Create(&playlist)
+	now := time.Now()
+	query := "INSERT INTO public.playlists (user_id, playlist_name, created_at, updated_at) VALUES($1, $2, $3, $4) RETURNING *"
+	h.DB.Raw(query, claims["user_id"].(float64), playlistName, now, now).Scan(&playlist)
 
 	return c.JSON(http.StatusCreated, &playlist)
 }
