@@ -5,6 +5,7 @@ import (
 
 	"github.com/jihoon6372/dopehotz-go/config"
 	"github.com/jihoon6372/dopehotz-go/handler"
+	"github.com/jihoon6372/dopehotz-go/models"
 	"github.com/jihoon6372/dopehotz-go/utils"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -26,6 +27,7 @@ func main() {
 	}
 
 	// db.AutoMigrate(&models.Playlist{})
+	db.AutoMigrate(&models.EventInfo{})
 
 	e := echo.New()
 	jwtConfig := config.GetJWTConfig([]byte(cfg.Config.SecretKey))
@@ -41,6 +43,12 @@ func main() {
 	r.POST("", h.CreatePlaylist)
 	r.PATCH("/:id", h.UpdatePlaylist)
 	e.GET("/playlist/:id", h.FindPlaylist)
+
+	// 공연정보
+	authEvent := e.Group("/event")
+	authEvent.Use(middleware.JWTWithConfig(jwtConfig))
+	authEvent.POST("", h.CreateEvent)
+	authEvent.DELETE("/:id", h.DeleteEvent)
 
 	e.Logger.Fatal(e.Start(":1323"))
 }
