@@ -83,3 +83,39 @@ func (h *Handler) DeleteEvent(c echo.Context) error {
 
 	return c.JSON(http.StatusNoContent, nil)
 }
+
+// FindEventList 공연정보 리스트
+func (h *Handler) FindEventList(c echo.Context) error {
+	eventInfos := []models.EventInfo{}
+	h.DB.Find(&eventInfos)
+
+	for i, eventInfo := range eventInfos {
+		user := &models.User{}
+		profile := &models.Profile{}
+		h.DB.First(&user, eventInfo.UserID)
+		h.DB.Where("user_id = ?", eventInfo.UserID).Find(&profile)
+		eventInfos[i].User = *user
+		eventInfos[i].User.Profile = *profile
+	}
+
+	return c.JSON(http.StatusOK, eventInfos)
+}
+
+// FindEvent 공연정보 상세
+func (h *Handler) FindEvent(c echo.Context) error {
+	ID := c.Param("id")
+	eventInfo := &models.EventInfo{}
+	h.DB.First(&eventInfo, ID).Related(&eventInfo.User)
+
+	// ID가 0이면 없는값
+	if eventInfo.ID == 0 {
+		return echo.ErrNotFound
+	}
+
+	// 사용자 프로필 조회
+	profile := &models.Profile{}
+	h.DB.Where("user_id = ?", eventInfo.UserID).Find(&profile)
+	eventInfo.User.Profile = *profile
+
+	return c.JSON(http.StatusOK, &eventInfo)
+}

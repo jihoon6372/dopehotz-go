@@ -45,6 +45,10 @@ func main() {
 	e.GET("/playlist/:id", h.FindPlaylist)
 
 	// 공연정보
+	e.GET("/event/list", h.FindEventList)
+	e.GET("/event/:id", h.FindEvent)
+
+	// 공연정보 인증라우터
 	authEvent := e.Group("/event")
 	authEvent.Use(middleware.JWTWithConfig(jwtConfig))
 	authEvent.POST("", h.CreateEvent)
