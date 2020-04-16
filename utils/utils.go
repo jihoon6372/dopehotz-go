@@ -3,7 +3,9 @@ package utils
 import (
 	"os"
 
+	"github.com/astaxie/beego/utils/pagination"
 	"github.com/jihoon6372/dopehotz-go/config"
+	"github.com/labstack/echo"
 	"gopkg.in/yaml.v2"
 )
 
@@ -33,4 +35,26 @@ func UniqueInt(intSlice []int) []int {
 		}
 	}
 	return list
+}
+
+// ListPagination 리스트 페이징 처리
+func ListPagination(c echo.Context, paginator pagination.Paginator, data interface{}) map[string]interface{} {
+	host := c.Scheme() + "://" + c.Request().Host
+	var previous *string
+	if paginator.HasPrev() {
+		prev := host + paginator.PageLinkPrev()
+		previous = &prev
+	}
+
+	var next *string
+	if paginator.HasNext() {
+		n := host + paginator.PageLinkNext()
+		next = &n
+	}
+
+	return map[string]interface{}{
+		"next":     next,
+		"previous": previous,
+		"results":  data,
+	}
 }

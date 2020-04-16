@@ -4,11 +4,15 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/astaxie/beego/utils/pagination"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jihoon6372/dopehotz-go/models"
 	"github.com/jihoon6372/dopehotz-go/serializer"
+	"github.com/jihoon6372/dopehotz-go/utils"
 	"github.com/labstack/echo"
 )
+
+var paginator = &pagination.Paginator{}
 
 // CreateEvent 공연정보 생성
 func (h *Handler) CreateEvent(c echo.Context) error {
@@ -86,9 +90,24 @@ func (h *Handler) DeleteEvent(c echo.Context) error {
 
 // FindEventList 공연정보 리스트
 func (h *Handler) FindEventList(c echo.Context) error {
-	eventInfos := []models.EventInfo{}
-	h.DB.Find(&eventInfos)
+	// 최대 개수
+	const perPage = 15
 
+	// 현재시간
+	now := time.Now()
+
+	// 카운트 조회
+	var count int
+	h.DB.Model(models.EventInfo{}).Where("performance_time >= ?", now).Count(&count)
+
+	// 페이징
+	paginator = pagination.NewPaginator(c.Request(), perPage, count)
+
+	// 리스트 조회
+	eventInfos := []models.EventInfo{}
+	h.DB.Limit(perPage).Offset(paginator.Offset()).Where("performance_time >= ?", now).Order("performance_time", true).Find(&eventInfos)
+
+	// 관계형 데이터 조회
 	for i, eventInfo := range eventInfos {
 		user := &models.User{}
 		profile := &models.Profile{}
@@ -98,7 +117,7 @@ func (h *Handler) FindEventList(c echo.Context) error {
 		eventInfos[i].User.Profile = *profile
 	}
 
-	return c.JSON(http.StatusOK, eventInfos)
+	return c.JSON(http.StatusOK, utils.ListPagination(c, *paginator, eventInfos))
 }
 
 // FindEvent 공연정보 상세
