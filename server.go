@@ -42,10 +42,13 @@ func main() {
 	r.Use(middleware.JWTWithConfig(jwtConfig))
 	r.POST("", h.CreatePlaylist)
 	r.PATCH("/:id", h.UpdatePlaylist)
+	r.GET("/me", h.FindMyPlaylist)
+	r.DELETE("/:id", h.DeletePlayList)
 	e.GET("/playlist/:id", h.FindPlaylist)
 
 	// 공연정보
 	e.GET("/event/list", h.FindEventList)
+	e.GET("/event/list/:userId", h.FindUserEventList)
 	e.GET("/event/:id", h.FindEvent)
 
 	// 공연정보 인증라우터

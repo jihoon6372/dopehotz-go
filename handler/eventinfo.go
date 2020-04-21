@@ -96,16 +96,19 @@ func (h *Handler) FindEventList(c echo.Context) error {
 	// 현재시간
 	now := time.Now()
 
+	// 조회 조건
+	where := "performance_time >= ?"
+
 	// 카운트 조회
 	var count int
-	h.DB.Model(models.EventInfo{}).Where("performance_time >= ?", now).Count(&count)
+	h.DB.Model(models.EventInfo{}).Where(where, now).Count(&count)
 
 	// 페이징
 	paginator = pagination.NewPaginator(c.Request(), perPage, count)
 
 	// 리스트 조회
 	eventInfos := []models.EventInfo{}
-	h.DB.Limit(perPage).Offset(paginator.Offset()).Where("performance_time >= ?", now).Order("performance_time", true).Find(&eventInfos)
+	h.DB.Limit(perPage).Offset(paginator.Offset()).Where(where, now).Order("performance_time", true).Find(&eventInfos)
 
 	// 관계형 데이터 조회
 	for i, eventInfo := range eventInfos {
@@ -137,4 +140,41 @@ func (h *Handler) FindEvent(c echo.Context) error {
 	eventInfo.User.Profile = *profile
 
 	return c.JSON(http.StatusOK, &eventInfo)
+}
+
+// FindUserEventList 사용자 공연정보 리스트
+func (h *Handler) FindUserEventList(c echo.Context) error {
+	userID := c.Param("userId")
+
+	// 최대 개수
+	const perPage = 15
+
+	// 현재시간
+	now := time.Now()
+
+	// 조건
+	where := "performance_time >= ? and user_id = ?"
+
+	// 카운트 조회
+	var count int
+	h.DB.Model(models.EventInfo{}).Where(where, now, userID).Count(&count)
+
+	// 페이징
+	paginator = pagination.NewPaginator(c.Request(), perPage, count)
+
+	// 리스트 조회
+	eventInfos := []models.EventInfo{}
+	h.DB.Limit(perPage).Offset(paginator.Offset()).Where(where, now, userID).Order("performance_time", true).Find(&eventInfos)
+
+	// 관계형 데이터 조회
+	for i, eventInfo := range eventInfos {
+		user := &models.User{}
+		profile := &models.Profile{}
+		h.DB.First(&user, eventInfo.UserID)
+		h.DB.Where("user_id = ?", eventInfo.UserID).Find(&profile)
+		eventInfos[i].User = *user
+		eventInfos[i].User.Profile = *profile
+	}
+
+	return c.JSON(http.StatusOK, utils.ListPagination(c, *paginator, eventInfos))
 }
