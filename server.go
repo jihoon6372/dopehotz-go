@@ -33,6 +33,10 @@ func main() {
 	jwtConfig := config.GetJWTConfig([]byte(cfg.Config.SecretKey))
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
+	}))
 
 	h := &handler.Handler{DB: db}
 	e.GET("/users/:id", h.FindUser)
