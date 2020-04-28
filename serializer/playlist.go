@@ -7,5 +7,5 @@ import (
 // Playlist 시리얼라이저
 type Playlist struct {
 	models.Playlist
-	TrackList []models.Track `json:"track_list"`
+	PlayList []models.Track `json:"play_list"`
 }

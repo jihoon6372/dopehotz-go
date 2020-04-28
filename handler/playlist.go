@@ -42,16 +42,17 @@ func (h *Handler) FindPlaylist(c echo.Context) error {
 	// 트랙리스트 조회
 	var trackList []string
 	trackList = strings.Split(originPlaylist.TrackListString, ",")
-	h.DB.Where("track_id IN (?)", trackList).Order("array_position(array[" + originPlaylist.TrackListString + "], track_id)").Find(&playlist.TrackList)
+	h.DB.Where("track_id IN (?)", trackList).Order("array_position(array[" + originPlaylist.TrackListString + "], track_id)").Find(&playlist.PlayList)
 
-	for i := range playlist.TrackList {
+	for i := range playlist.PlayList {
 		profile := &models.Profile{}
-		track := &playlist.TrackList[i]
-		h.DB.Model(playlist.TrackList[i]).Related(&track.Genre).Related(&track.API).Related(&track.User)
-		h.DB.Where("user_id = ?", playlist.TrackList[i].UserID).Find(&profile)
+		track := &playlist.PlayList[i]
+		h.DB.Model(playlist.PlayList[i]).Related(&track.Genre).Related(&track.API).Related(&track.User)
+		h.DB.Where("user_id = ?", playlist.PlayList[i].UserID).Find(&profile)
 		t := track.CreatedAt.In(time.FixedZone("KST", 9*60*60))
 		track.CreatedAt = t
-		playlist.TrackList[i].User.Profile = *profile
+		track.Order = i + 1
+		playlist.PlayList[i].User.Profile = *profile
 	}
 
 	return c.JSON(http.StatusOK, &playlist)
@@ -164,21 +165,22 @@ func (h *Handler) FindMyPlaylist(c echo.Context) error {
 			h.DB.Raw(query, userID, playlistName, now, now).Scan(&playlist)
 		}
 
-		fmt.Println("playlist", len(playlist.TrackList))
+		fmt.Println("playlist", len(playlist.PlayList))
 
 		// 트랙리스트 조회
 		var trackList []string
 		trackList = strings.Split(originPlaylist.TrackListString, ",")
-		h.DB.Where("track_id IN (?)", trackList).Order("array_position(array[" + originPlaylist.TrackListString + "], track_id)").Find(&playlist.TrackList)
+		h.DB.Where("track_id IN (?)", trackList).Order("array_position(array[" + originPlaylist.TrackListString + "], track_id)").Find(&playlist.PlayList)
 
-		for i := range playlist.TrackList {
+		for i := range playlist.PlayList {
 			profile := &models.Profile{}
-			track := &playlist.TrackList[i]
-			h.DB.Model(playlist.TrackList[i]).Related(&track.Genre).Related(&track.API).Related(&track.User)
-			h.DB.Where("user_id = ?", playlist.TrackList[i].UserID).Find(&profile)
+			track := &playlist.PlayList[i]
+			h.DB.Model(playlist.PlayList[i]).Related(&track.Genre).Related(&track.API).Related(&track.User)
+			h.DB.Where("user_id = ?", playlist.PlayList[i].UserID).Find(&profile)
 			t := track.CreatedAt.In(time.FixedZone("KST", 9*60*60))
 			track.CreatedAt = t
-			playlist.TrackList[i].User.Profile = *profile
+			track.Order = i + 1
+			playlist.PlayList[i].User.Profile = *profile
 		}
 
 		return c.JSON(http.StatusOK, &playlist)

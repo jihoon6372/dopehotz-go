@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -62,8 +63,7 @@ func (h *Handler) CreateEvent(c echo.Context) error {
 	}
 
 	result := &serializer.EventInfoBase{}
-	h.DB.Create(eventInfo).Scan(&result)
-
+	h.DB.Create(eventInfo).Scan(result)
 	return c.JSON(http.StatusCreated, result)
 }
 
@@ -82,8 +82,7 @@ func (h *Handler) DeleteEvent(c echo.Context) error {
 		})
 	}
 
-	eventInfo.DeletedAt = time.Now()
-	h.DB.Save(&eventInfo)
+	h.DB.Delete(&eventInfo)
 
 	return c.JSON(http.StatusNoContent, nil)
 }
@@ -112,6 +111,7 @@ func (h *Handler) FindEventList(c echo.Context) error {
 
 	// 관계형 데이터 조회
 	for i, eventInfo := range eventInfos {
+		fmt.Println("event", i)
 		user := &models.User{}
 		profile := &models.Profile{}
 		h.DB.First(&user, eventInfo.UserID)

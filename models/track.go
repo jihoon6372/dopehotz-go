@@ -4,6 +4,7 @@ import "time"
 
 // Track 트랙 모델
 type Track struct {
+	ID               int       `json:"id"`
 	TrackID          int       `json:"track_id"`
 	Title            string    `gorm:"type:varchar(100);" json:"title"`
 	Slug             string    `gorm:"type:varchar(100);" json:"slug"`
@@ -34,6 +35,7 @@ type Track struct {
 	Genre            Genre     `json:"genre"`
 	API              API       `json:"api"`
 	User             User      `gorm:"foreignkey:UserID" json:"user"`
+	Order            int       `json:"order"`
 }
 
 // TableName 유저 테이블명 반환
