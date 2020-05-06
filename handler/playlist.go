@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -23,7 +22,8 @@ func (h *Handler) FindPlaylist(c echo.Context) error {
 		created_at,
 		updated_at,
 		array_to_string(track_list, ',') as track_list_string,
-		track_list
+		track_list,
+		artwork
 	from
 		playlists
 	where
@@ -88,15 +88,17 @@ func (h *Handler) UpdatePlaylist(c echo.Context) error {
 	}
 
 	// 입력받은 파라미터
+	form, err := c.MultipartForm()
+	if err != nil {
+		return nil
+	}
+
 	inpTrackList := c.FormValue("track_list")
-	inpPlaylistName := c.FormValue("playlist_name")
 
 	// 플레이리스트 이름
-	var playlistName string
-	if inpPlaylistName == "" {
-		playlistName = playlist.PlaylistName
-	} else {
-		playlistName = inpPlaylistName
+	playlistName := playlist.PlaylistName
+	if inpPlaylistName, ok := form.Value["playlist_name"]; ok {
+		playlistName = inpPlaylistName[0]
 	}
 
 	// 플레이리스트 소속 트랙 리스트
@@ -107,8 +109,14 @@ func (h *Handler) UpdatePlaylist(c echo.Context) error {
 		updateTrackList = "{" + inpTrackList + "}"
 	}
 
+	// 아트워크
+	artwork := playlist.Artwork
+	if inpArtwork, artworkOk := form.Value["artwork"]; artworkOk {
+		artwork = inpArtwork[0]
+	}
+
 	// 업데이트
-	h.DB.Model(&playlist).Updates(map[string]interface{}{"track_list": updateTrackList, "playlist_name": playlistName})
+	h.DB.Model(&playlist).Updates(map[string]interface{}{"track_list": updateTrackList, "playlist_name": playlistName, "artwork": artwork})
 
 	return c.JSON(http.StatusOK, playlist)
 }
@@ -164,8 +172,6 @@ func (h *Handler) FindMyPlaylist(c echo.Context) error {
 			query := "INSERT INTO public.playlists (user_id, playlist_name, created_at, updated_at, is_default) VALUES($1, $2, $3, $4, true) RETURNING *"
 			h.DB.Raw(query, userID, playlistName, now, now).Scan(&playlist)
 		}
-
-		fmt.Println("playlist", len(playlist.PlayList))
 
 		// 트랙리스트 조회
 		var trackList []string
@@ -224,4 +230,5 @@ type PlaylistSimple struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 	PlaylistName string    `json:"playlist_name"`
 	Count        int       `json:"count"`
+	Artwork      string    `json:"artwork"`
 }

@@ -10,4 +10,5 @@ type Playlist struct {
 	UserID       int       `json:"user_id"`
 	PlaylistName string    `json:"playlist_name"`
 	TrackList    []uint8   `json:"track_list"`
+	Artwork      string    `json:"artwork"`
 }
