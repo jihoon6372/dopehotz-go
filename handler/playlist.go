@@ -42,7 +42,7 @@ func (h *Handler) FindPlaylist(c echo.Context) error {
 	// 트랙리스트 조회
 	var trackList []string
 	trackList = strings.Split(originPlaylist.TrackListString, ",")
-	h.DB.Where("track_id IN (?)", trackList).Order("array_position(array[" + originPlaylist.TrackListString + "], track_id)").Find(&playlist.PlayList)
+	h.DB.Where("is_deleted = false and is_blind = false and track_id IN (?)", trackList).Order("array_position(array[" + originPlaylist.TrackListString + "], track_id)").Find(&playlist.PlayList)
 
 	for i := range playlist.PlayList {
 		profile := &models.Profile{}
@@ -93,31 +93,42 @@ func (h *Handler) UpdatePlaylist(c echo.Context) error {
 		return nil
 	}
 
-	inpTrackList := c.FormValue("track_list")
+	// 업데이트 데이터
+	updatePlaylistData := map[string]interface{}{}
 
 	// 플레이리스트 이름
-	playlistName := playlist.PlaylistName
 	if inpPlaylistName, ok := form.Value["playlist_name"]; ok {
-		playlistName = inpPlaylistName[0]
+
+		updatePlaylistData["playlist_name"] = inpPlaylistName[0]
+
 	}
 
 	// 플레이리스트 소속 트랙 리스트
-	var updateTrackList string
-	if inpTrackList == "" {
-		updateTrackList = string(playlist.TrackList)
-	} else {
-		updateTrackList = "{" + inpTrackList + "}"
+	if inpTrackList, ok := form.Value["track_list"]; ok {
+		updatePlaylistData["track_list"] = "{" + inpTrackList[0] + "}"
 	}
 
 	// 아트워크
-	artwork := playlist.Artwork
 	if inpArtwork, artworkOk := form.Value["artwork"]; artworkOk {
-		artwork = inpArtwork[0]
+		updatePlaylistData["artwork"] = inpArtwork[0]
 	}
 
 	// 업데이트
-	h.DB.Model(&playlist).Updates(map[string]interface{}{"track_list": updateTrackList, "playlist_name": playlistName, "artwork": artwork})
+	if err := h.DB.Model(&playlist).Updates(updatePlaylistData).Error; err != nil {
+		// error handle
+		errResult := map[string]interface{}{
+			"message": "데이터 수정중 오류가 발생했습니다.",
+		}
 
+		if strings.Contains(err.Error(), "pq: cannot set transaction read-write mode during recovery") {
+			errResult["message"] = "데이터 수정중 오류가 발생했습니다."
+		}
+
+		return c.JSON(http.StatusBadRequest, errResult)
+		// error handle end
+	}
+
+	// success
 	return c.JSON(http.StatusOK, playlist)
 }
 
@@ -176,7 +187,7 @@ func (h *Handler) FindMyPlaylist(c echo.Context) error {
 		// 트랙리스트 조회
 		var trackList []string
 		trackList = strings.Split(originPlaylist.TrackListString, ",")
-		h.DB.Where("track_id IN (?)", trackList).Order("array_position(array[" + originPlaylist.TrackListString + "], track_id)").Find(&playlist.PlayList)
+		h.DB.Where("is_deleted = false and is_blind = false and track_id IN (?)", trackList).Order("array_position(array[" + originPlaylist.TrackListString + "], track_id)").Find(&playlist.PlayList)
 
 		for i := range playlist.PlayList {
 			profile := &models.Profile{}
